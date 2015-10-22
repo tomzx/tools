@@ -53,7 +53,7 @@ foreach ($repositories as $repository) {
 }
 
 echo 'Fetching all repositories'.PHP_EOL;
-git('fetch --all');
+git('fetch --all --no-tags');
 
 foreach ($repositories as $repository) {
 	$branch = $repository['identifier'].'/'.$repository['branch'];
