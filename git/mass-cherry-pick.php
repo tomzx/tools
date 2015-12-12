@@ -18,7 +18,7 @@
  * ex: tomzx/my-repo https://github.com/tomzx/my-repo.git master
  */
 
-function git($command) {
+function git($command, &$output = null) {
 	exec('git '.$command, $output, $exitCode);
 	return $exitCode;
 }
@@ -57,20 +57,35 @@ git('fetch --all --no-tags');
 
 foreach ($repositories as $repository) {
 	$branch = $repository['identifier'].'/'.$repository['branch'];
+	$remoteBranch = 'remotes/'.$branch;
 
 	echo 'Checking out repository '.$repository['identifier'].PHP_EOL;
 	git('reset --hard');
-	git('checkout -b '.$branch.' remotes/'.$branch);
+	git('checkout -b '.$branch.' '.$remoteBranch);
 	git('checkout '.$branch);
 
 	echo 'Resetting repository '.$repository['identifier'].' to HEAD'.PHP_EOL;
-	git('reset --hard remotes/'.$branch);
+	git('reset --hard '.$remoteBranch);
 
 	echo 'Apply revisions...'.PHP_EOL;
 	foreach ($revisions as $revision) {
 		echo $revision.PHP_EOL;
-		if (git('cherry-pick '.$revision) !== 0) {
-			git('cherry-pick --abort');
+		if (git('cherry-pick '.$revision, $output) !== 0) {
+			do {
+				echo 'There was an issue while applying the cherry-pick. Continue (c), Skip (s) or Abort (a)?'.PHP_EOL;
+				var_dump($output).PHP_EOL;
+				$choice = strtolower(trim(fgets(STDIN)));
+			} while ( ! in_array($choice, ['c', 'a', 'r']));
+
+			switch ($choice) {
+				case 'c':
+					break;
+				case 's':
+					git('cherry-pick --abort');
+				case 'a':
+					exit(1);
+					break;
+			}
 		}
 	}
 	echo PHP_EOL;
